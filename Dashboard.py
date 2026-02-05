@@ -48,13 +48,31 @@ st.markdown(
 )
 
 # STEP 5: File Upload
-def load_data(uploaded_file):
-    """Load and preprocess Excel data."""
-    if uploaded_file is None:
-        st.warning("Please upload an Excel file to continue.")
-        return None
+uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
-    df = pd.read_excel(uploaded_file, sheet_name="Consolidated", header=1)
+def load_data(uploaded_file=None):
+    """Load and preprocess data from Google Sheets or Excel."""
+    df = None
+    
+
+    # Step 4: Use the secret link
+    sheet_url = st.secrets["google"]["sheet_url"]
+
+    try:
+        df = pd.read_csv(sheet_url)
+        st.sidebar.success("✅ Data loaded from Google Sheets.")
+        st.sidebar.info("Source: Google Sheets")
+    except Exception:
+        st.sidebar.warning("⚠️ Could not load Google Sheet. Please upload Excel file instead.")
+    if uploaded_file is not None:
+        df = pd.read_excel(uploaded_file, sheet_name="Consolidated", header=1)
+        st.sidebar.success("✅ Data loaded from uploaded Excel file.")
+        st.sidebar.info("Source: Excel Upload")
+
+
+    if df is None:
+        st.error("No data available. Please check Google Sheet link or upload a file.")
+        st.stop()
 
     # Normalize column names
     df.columns = df.columns.str.strip().str.lower()
@@ -65,11 +83,12 @@ def load_data(uploaded_file):
     else:
         st.error("No 'date' column found. Columns are: " + str(df.columns.tolist()))
         st.stop()
+
     return df
 
 # 🔹 Main App
-uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 df = load_data(uploaded_file)
+
 
 if df is not None:
     # Data is loaded successfully, but no preview shown
