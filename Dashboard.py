@@ -51,25 +51,30 @@ st.markdown(
 
 
 # STEP 5: File Upload or Auto-detect
-# STEP 5: Load data from Google Sheets (CSV export)
-sheet_url = "https://docs.google.com/spreadsheets/d/1rAH5YGAt13Z41M_I1v5jv7oYhKlk5klz/gviz/tq?tqx=out:csv"
-
 import pandas as pd
-df = pd.read_csv(sheet_url)
+import streamlit as st
 
+# Google Sheet CSV export link
+sheet_url = "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv"
 
+df = None
 
-uploaded_file = st.sidebar.file_uploader("📂 Upload Excel File", type=["xlsx"])
+# Try loading from Google Sheets first
+try:
+    df = pd.read_csv(sheet_url)
+    st.sidebar.success("✅ Data loaded from Google Sheets.")
+except Exception as e:
+    st.sidebar.warning("⚠️ Could not load Google Sheet. Please upload Excel file instead.")
+    uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
+    if uploaded_file is not None:
+        df = pd.read_excel(uploaded_file)
+        st.sidebar.success("✅ Data loaded from uploaded Excel file.")
 
-if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file, sheet_name="Consolidated", header=1)
-    st.sidebar.info("✅ File loaded from upload.")
-elif os.path.exists(default_path):
-    df = pd.read_excel(default_path, sheet_name="Consolidated", header=1)
-    st.sidebar.info(f"✅ Auto-detected file loaded: {default_path}")
-else:
-    st.sidebar.warning("⚠️ No file loaded. Please upload one.")
+# Stop if no data available
+if df is None:
+    st.error("No data available. Please check Google Sheet link or upload a file.")
     st.stop()
+
 
 # STEP 6: Normalize Column Names
 df.columns = df.columns.str.strip().str.lower()
